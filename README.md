@@ -1,13 +1,5 @@
 # Gpu-Stencil-Operations
 
-* Enviroment: 
-0 Ubunto 16.04 LTS
-1 GeForce GTX 750 Ti/PCIe/SSE2
-2 python 3
-3 Numba : compiler for Python 
-4 Cuda Python
-
-
 This Repo Demonstrates the Methods For running Famous Serial (CPU) operations on CUDA Powered GPU
 
 
@@ -37,3 +29,13 @@ Filter coefficients can be stored in constant memory
 
 
 * Basic Image Processing Filters, using 2d Stensils in : image_filter_test.py
+
+
+
+* Enviroment: 
+
+0 Ubunto 16.04 LTS
+1 GeForce GTX 750 Ti/PCIe/SSE2
+2 python 3
+3 Numba : compiler for Python 
+4 Cuda Python
