@@ -87,10 +87,7 @@ BIN_COUNT = 255
 def thresholding(arry, hist):
 
     # We have 10*10 threads per block
-
     A = cuda.shared.array(shape=(32,32), dtype=int32)
-
-    # H = cuda.shared.array(BIN_COUNT, dtype=int32)
 
     x,y = cuda.grid(2)
 
@@ -114,101 +111,29 @@ def thresholding(arry, hist):
         #  We need to make sure that each value is accessable to each thread
         #  TODO: make them atomic
         center = A[ty, tx]
-        # Lets try averaging,
-        # code += A[ty-1][x-1]
-        # # cuda.syncthreads()
-        # code += A[ty][tx-1]
-        # # cuda.syncthreads()
-        # code += A[ty+1][tx-1]
-        # # cuda.syncthreads()
-        # code += A[ty+1][tx]
-        # # cuda.syncthreads()
-        # code += A[ty+1][tx+1]
-        # # cuda.syncthreads()
-        # code += A[ty][tx+1]
-        # # cuda.syncthreads()
-        # code += A[ty-1][tx+1]
-        # # cuda.syncthreads()
-        # code += A[ty-1][tx-1]
-        #
-        # code = code / 8
-
         code = 0 if center > 150  else 255
 
-        # Compiler optimization: By loop unrolling
-        # turns out twice faster than rolled version for over
-        # 16*16
-
-        # cuda.syncthreads()
-        # code |= (1 if A[ty-1][x-1] > center else 0 ) <<  7
-        # # cuda.syncthreads()
-        # code |= (1 if A[ty][tx-1] > center else 0)  << 6
-        # # cuda.syncthreads()
-        # code |= (1 if A[ty+1][tx-1] > center else 0 )<< 5
-        # # cuda.syncthreads()
-        # code |= (1 if A[ty+1][tx] > center else 0 ) << 4
-        # # cuda.syncthreads()
-        # code |= (1 if A[ty+1][tx+1] > center else 0 ) << 3
-        # # cuda.syncthreads()
-        # code |= (1 if A[ty][tx+1] > center else 0 ) << 2
-        # # cuda.syncthreads()
-        # code |= (1 if A[ty-1][tx+1] > center else 0 )<< 1
-        # # cuda.syncthreads()
-        # code |= (1 if A[ty-1][tx-1] > center else 0) << 0
-        # arry[x,y] = code
-        # Since atomic add; adds value to the existing value
-        # Need to figure out the fraction to be added in the previous value
         code = ( code - center)
 
         A[ty,tx] = code
 
-        # cuda.atomic.add(A, (ty,tx),code)
+        # Wait All Threads to Sync here.
         cuda.syncthreads()
 
         val  = A[ty,tx]
         cuda.atomic.add(arry, (x,y),val)
         cuda.syncthreads()
+
         # This Atomic Operation is equivalent to  hist[code % 256] += 1
         ind = code % BIN_COUNT
-
         cuda.atomic.add(hist, ind, 1)
-
-
-
-
-        # val = H[ind]
-        # cuda.syncthreads()
-        # cuda.atomic.add(hist, ind, val)
-    # TODO: May be Let each block creates its local histogram and
-    #  call another kernel to add it into the global memory
-
-    # else:
-    #     arry[x,y] = 255
-        # cuda.atomic.add(arry, (x,y),0)
-    # Total No of Image
-    # if ((y > 0 and  y < 65536 ) and (x > 0 and x < 65536)):
-    #     # Now Lets Merge all the histograms
-    #     # Do Linear Indexing
-    #     # unique block index inside a 3D block grid
-    #     LinearblockId = cuda.blockIdx.x + cuda.blockIdx.y * cuda.gridDim.x #//2D
-    #     # global unique thread index, block dimension uses only x-coordinate
-    #     LinearthreadId = LinearblockId * cuda.blockDim.x + cuda.threadIdx.x
-    #     cuda.syncthreads()
-    #     # print(LinearthreadId)
-    #     val = LinearthreadId % BIN_COUNT
-    #
-    #     histVal = H[val]
-    #
-    #     cuda.atomic.add(hist,val, histVal)
 
 
 @jit([void(int32[:,:], int32[:])], target='cuda')
 def unsharp_masking(arry, hist):
 
     # We have 10*10 threads per block
-
     A = cuda.shared.array(shape=(32,32), dtype=int32)
-
     # H = cuda.shared.array(BIN_COUNT, dtype=int32)
 
     x,y = cuda.grid(2)
@@ -235,48 +160,16 @@ def unsharp_masking(arry, hist):
         center = A[ty, tx]
         # Lets try averaging,
         code += A[ty-1][tx-1]*-1
-        # cuda.syncthreads()
         code += A[ty][tx-1]*-2
-        # cuda.syncthreads()
         code += A[ty+1][tx-1]*-1
-        # cuda.syncthreads()
         code += A[ty+1][tx]*-2
-        # cuda.syncthreads()
         code += A[ty+1][tx+1]*-1
-        # cuda.syncthreads()
         code += A[ty][tx+1]*-2
-        # cuda.syncthreads()
         code += A[ty-1][tx+1]*-1
-        # cuda.syncthreads()
         code += A[ty-1][tx-1]*-2
 
         code = code / 16
 
-        # code = 0 if center > 150  else 255
-
-        # Compiler optimization: By loop unrolling
-        # turns out twice faster than rolled version for over
-        # 16*16
-
-        # cuda.syncthreads()
-        # code |= (1 if A[ty-1][x-1] > center else 0 ) <<  7
-        # # cuda.syncthreads()
-        # code |= (1 if A[ty][tx-1] > center else 0)  << 6
-        # # cuda.syncthreads()
-        # code |= (1 if A[ty+1][tx-1] > center else 0 )<< 5
-        # # cuda.syncthreads()
-        # code |= (1 if A[ty+1][tx] > center else 0 ) << 4
-        # # cuda.syncthreads()
-        # code |= (1 if A[ty+1][tx+1] > center else 0 ) << 3
-        # # cuda.syncthreads()
-        # code |= (1 if A[ty][tx+1] > center else 0 ) << 2
-        # # cuda.syncthreads()
-        # code |= (1 if A[ty-1][tx+1] > center else 0 )<< 1
-        # # cuda.syncthreads()
-        # code |= (1 if A[ty-1][tx-1] > center else 0) << 0
-        # arry[x,y] = code
-        # Since atomic add; adds value to the existing value
-        # Need to figure out the fraction to be added in the previous value
         code = ( code - center)
 
         A[ty,tx] = code
@@ -291,35 +184,6 @@ def unsharp_masking(arry, hist):
         ind = code % BIN_COUNT
 
         cuda.atomic.add(hist, ind, 1)
-
-
-
-
-        # val = H[ind]
-        # cuda.syncthreads()
-        # cuda.atomic.add(hist, ind, val)
-    # TODO: May be Let each block creates its local histogram and
-    #  call another kernel to add it into the global memory
-
-    # else:
-    #     arry[x,y] = 255
-        # cuda.atomic.add(arry, (x,y),0)
-    # Total No of Image
-    # if ((y > 0 and  y < 65536 ) and (x > 0 and x < 65536)):
-    #     # Now Lets Merge all the histograms
-    #     # Do Linear Indexing
-    #     # unique block index inside a 3D block grid
-    #     LinearblockId = cuda.blockIdx.x + cuda.blockIdx.y * cuda.gridDim.x #//2D
-    #     # global unique thread index, block dimension uses only x-coordinate
-    #     LinearthreadId = LinearblockId * cuda.blockDim.x + cuda.threadIdx.x
-    #     cuda.syncthreads()
-    #     # print(LinearthreadId)
-    #     val = LinearthreadId % BIN_COUNT
-    #
-    #     histVal = H[val]
-    #
-    #     cuda.atomic.add(hist,val, histVal)
-
 
 @jit([void(int32[:,:], int32[:])], target='cuda')
 def lbp_texture(arry, hist):
@@ -459,12 +323,13 @@ def lbp_cuda_test():
     # Calculating histogram
     print(len(histogram))
     print(histogram)
+
     # plt.hist(histogram,256,[0,256]); plt.show()
 
     # Calculating From origional Array
 
     # histogram = histogram.astype(np.int32)
-    hist = src1.astype(np.int32)
+    # hist = src1.astype(np.int32)
     # hist = np.bincount(histogram.ravel(),minlength=256)
     # hist = hist / sum(hist)
 
