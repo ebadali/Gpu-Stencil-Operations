@@ -7,7 +7,7 @@ This Repo Demonstrates the Methods For running Famous Serial (CPU) operations on
 
 This Repo Contains Stencils Operations and Demonstrates:
 
-* 1d Stensil Operations On Cuda in : one_d_stencil.py
+##### 1d Stensil Operations On Cuda in : one_d_stencil.py
 
 Consider applying a 1D stencil to a 1D array of elements.
 Each output element is the sum of input elements within a radius.
@@ -17,25 +17,27 @@ input elements:
 
 
 
-* 2d Stensil Operations On Cuda in : image_filter_test.py 
+##### 2d Stensil Operations On Cuda in : image_filter_test.py 
 
-Filter coefficients can be stored in constant memory
-•Image tile can be cached to shared memory
-•Each output pixel must have access to neighboring pixels within certain radius R
-•This means tiles in shared memory must be expanded with an apron that contains neighboring pixels
-•Only pixels within the apron write results.The remaining threads do nothing
+Filter coefficients can be stored in constant memory!
 
-
-
-
-* Basic Image Processing Filters, using 2d Stensils in : image_filter_test.py
+* Image tile can be cached to shared memory
+* Each output pixel must have access to neighboring pixels within certain radius R
+* This means tiles in shared memory must be expanded with an apron that contains neighboring pixels
+* Only pixels within the apron write results.The remaining threads do nothing
 
 
 
-* Enviroment: 
 
-0 Ubunto 16.04 LTS
-1 GeForce GTX 750 Ti/PCIe/SSE2
-2 python 3
-3 Numba : compiler for Python 
-4 Cuda Python
+##### Basic Image Processing Filters, using 2d Stensils in : image_filter_test.py
+
+
+
+### Enviroment:
+
+0. Ubunto 16.04 LTS
+1. GeForce GTX 750 Ti/PCIe/SSE2
+2. python 3
+3. Numba : compiler for Python 
+4. Cuda Python
+
