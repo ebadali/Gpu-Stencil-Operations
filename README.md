@@ -34,6 +34,13 @@ Similarly We Create an Apron around Image Tile, So that,
 Apply some Basic operation such as Thresholding, Image Sharpening and averaging.
 
 
+##### Reduction Algorithm Implementation in : reduction_sum.py
+
+Basically, It Loads all the Feature Vector From the File and the Vector to be compaired to the GPU,
+Calcualtes kullback leibler divergence (a fundamental equation of information theory that quantifies the proximity of two probability distributions) among the vectors On the GPU.
+
+CPU Version is also Provided, within the File.
+
 ### Enviroment:
 
 0. Ubunto 16.04 LTS
