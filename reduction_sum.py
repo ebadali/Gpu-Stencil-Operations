@@ -32,7 +32,7 @@ threadCount = 32
 BIN_COUNT = 34
 
 # -------Loading Feature vectors-----------
-FILENAME = "features6.json"
+FILENAME = "features.json"
 # Load All Featur vector to the ram
 def load_allFeatures():
     featureVector = {}
