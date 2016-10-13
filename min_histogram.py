@@ -26,7 +26,7 @@ import json
 from sklearn.metrics import mean_squared_error
 
 
-SEARCH_INDEX = 0
+SEARCH_INDEX = 4
 n = 256
 threadCount = 32
 BIN_COUNT = 34
@@ -82,8 +82,8 @@ print('Sum of kl ', SumOfKL)
 # -------Finished CPU Version of KL Divergence ------------
 
 
-@jit([void(float64[:,:], float64[:], float64[:])], target='cuda')
-def hist_comp(arry, hist, result):
+@jit([void(float64[:,:], float64[:], float64[:], int8)], target='cuda')
+def hist_comp(arry, hist, result, index):
 
     # We have N threads per block
     # And We have one block only
@@ -121,34 +121,35 @@ def hist_comp(arry, hist, result):
     R[x] = Sum
     cuda.syncthreads()
 
-    # Finding the Min Divergence OR
-    # Finding the sum of all Divergences
-    # by Reducing Method
+    # These Should be Shared Variables.
+    Min = cuda.shared.array(1,dtype=float32)
+    mIndex = cuda.shared.array(1,dtype=int8)
+    Min = 0.0000000000
+    mIndex = 0
 
-    rSize = cuda.blockDim.x >> 1
-    while rSize > 0:
-        if x < rSize:
-            R[x] = (R[x]+R[x+rSize])
-            # R[x] = min(R[x],R[x+rSize])
-        rSize >>= 1
-        cuda.syncthreads()
+    if x == 0:
+        Min = R[x]
+        mIndex = x
 
-    # This implementation doesn't take care of last two values.
-    # So, Using Hack
-    # TODO: need to Fix It.
-    if x == 0 :
-        # R[x] = x if R[x] < R[x+1] else (x+1)
-        R[x] = (R[x]+R[x+1])
-        # R[x] = min(R[x],R[x+1])
-        result[x] = R[x]
+    cuda.syncthreads()
+    if R[x] <= Min:
+        Min = R[x]
+        mIndex = x
+    cuda.syncthreads()
+
+    if x == mIndex :
+        index=mIndex
 
 
 def hist_cuda_test():
 
     histogram_array = src1#np.zeros(vectorSize*BIN_COUNT, dtype=np.int32).reshape(vectorSize,BIN_COUNT)
+
+    # This will be calculated from the Camera's Image processed on GPU.
+    # Lets hardcode it at the moment
     histogram = src1[SEARCH_INDEX]#np.zeros(BIN_COUNT, dtype=np.float32)
     results = np.zeros(9, dtype=np.float64)
-
+    foundIndex = -1
     # use stream to trigger async memory transfer
     cstream = cuda.stream()
     ts = timer()
@@ -161,16 +162,20 @@ def hist_cuda_test():
             d_histogram_array = cuda.to_device(histogram_array, stream=cstream)
             d_histogram = cuda.to_device(histogram, stream=cstream)
             d_results = cuda.to_device(results, stream=cstream)
+            d_foundIndex = cuda.to_device(foundIndex, stream=cstream)
 
-            hist_comp[1, vectorSize, cstream](d_histogram_array,d_histogram,d_results)
+            hist_comp[1, vectorSize, cstream](d_histogram_array,d_histogram,d_results,d_foundIndex)
 
             d_histogram_array.copy_to_host(histogram_array, stream=cstream)
             d_histogram.copy_to_host(histogram, stream=cstream)
             d_results.copy_to_host(results, stream=cstream)
+            d_foundIndex.copy_to_host(foundIndex, stream=cstream)
 
     te = timer()
     print('GPU Process ',count," Iterations : in ", te - ts)
     print('histogram is')
     print(results)
+    print('Found Index ', foundIndex)
+
 
 hist_cuda_test()
